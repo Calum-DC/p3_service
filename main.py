@@ -72,6 +72,9 @@ def process_sqs_p3_message():
         except Exception as e:
             print(f"An error occurred: {str(e)}")
 
+@app.route('/health', methods=["GET"])
+def health_check():
+    return "Everything is A-OK"
 
 if __name__ == '__main__':
     # Run the function in a separate thread
