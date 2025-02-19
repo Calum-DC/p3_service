@@ -1,4 +1,4 @@
-FROM python
+FROM python:3.12-slim
 
 ENV SQS_P3_URL=""
 ENV AWS_REGION=""
