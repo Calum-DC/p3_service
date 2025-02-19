@@ -20,9 +20,11 @@ QUEUE_URL = os.getenv('SQS_P3_URL')
 SES_EMAIL = os.getenv('SES_EMAIL')
 RECIPIENT_EMAIL = os.getenv('RECIPIENT_EMAIL')
 
+stop_flag = False
 
 def process_sqs_p3_message():
-    while True:
+    global stop_flag
+    while not stop_flag:
         try:
             # Receive the message from the SQS queue
             response = sqs_client.receive_message(
@@ -72,12 +74,21 @@ def process_sqs_p3_message():
         except Exception as e:
             print(f"An error occurred: {str(e)}")
 
-@app.route('/health', methods=["GET"])
+@app.route("/health", methods=["GET"])
 def health_check():
-    return "Everything is A-OK"
+    return jsonify({"status": "healthy"}), 200
 
-if __name__ == '__main__':
-    # Run the function in a separate thread
-    threading.Thread(target=process_sqs_p3_message, daemon=True).start()
+def background_thread():
+    sqs_thread = threading.Thread(target=process_sqs_p3_message, daemon=True)
+    sqs_thread.start()
+    return sqs_thread
 
-    app.run(debug=False, port=5003)
+background_thread = background_thread()
+
+if __name__ == "__main__":
+    try:
+        app.run(host="0.0.0.0", port=8003)
+    except KeyboardInterrupt:
+        print("Shutting down...")
+        stop_flag = True
+        bg_thread.join()
