@@ -1,0 +1,34 @@
+name: Docker Image Scan with Trivy
+
+on:
+  push:
+    branches:
+      - main 
+
+jobs:
+  trivy_scan:
+    runs-on: ubuntu-latest 
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+
+      - name: Build Docker image
+        run: |
+           docker build . -t p3-micro-container
+
+      - name: Run Trivy scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "p3-micro-container:latest" 
+          format: "table" 
+          exit-code: 1 
+          ignore-unfixed: true 
+          severity: "CRITICAL,HIGH"  
+      
