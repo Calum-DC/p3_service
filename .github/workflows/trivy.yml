@@ -1,10 +1,11 @@
 name: Docker Image Scan with Trivy
 
 on:
-  push:
-    branches:
-      - main 
-
+  workflow_run:
+    workflows: ["Python Test"]
+    types: 
+      - completed
+      
 jobs:
   trivy_scan:
     runs-on: ubuntu-latest 
