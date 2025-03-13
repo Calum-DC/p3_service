@@ -29,7 +29,6 @@ def process_sqs_p3_message():
                 QueueUrl=QUEUE_URL,
                 MaxNumberOfMessages=1,
                 WaitTimeSeconds=10,
-                VisibilityTimeout=30 
             )
 
             messages = response.get('Messages', [])
@@ -46,8 +45,44 @@ def process_sqs_p3_message():
             title = message_body.get('title')
             description = message_body.get('description')
 
-            email_template = f"Hello,\n\nPlease see below the following high priority bug report:\n\nTitle: {title}\n\nDescription: {description}"
+            # Use the native inference API to send a text message to Amazon Titan Text
+            # and print the response stream.
+            # Create a Bedrock Runtime client in the AWS Region of your choice.
+            client = boto3.client("bedrock-runtime", region_name="us-east-1")
 
+            # Set the model ID, e.g., Titan Text Premier.
+            model_id = "amazon.titan-text-express-v1"
+
+            # Define the prompt for the model.
+            prompt = "The following passage of text outlines an issue that has been reported via an online web form, please pretend you are an IT support engineer and provide a solution to the problem or statement given, also be aware that this message will be read by a recipient that is unable to provide any additional information. Dont' write too much and definitely dont say that you are a model responding to the problem. Please provide a structured solution that clearly outlines a solution: " + description
+
+            # Format the request payload using the model's native structure.
+            native_request = {
+                "inputText": prompt,
+                "textGenerationConfig": {
+                    "maxTokenCount": 1024,
+                    "temperature": 0.3,
+                },
+            }
+
+            # Convert the native request to JSON.
+            ai_request = json.dumps(native_request)
+
+            # Invoke the model with the request.
+            ai_response = client.invoke_model(
+                modelId=model_id, body=ai_request
+            )
+
+            # Decode the response body.
+            model_response = json.loads(ai_response["body"].read())
+
+            # Extract and print the response text.
+            response_text = model_response["results"][0]["outputText"]
+            print(response_text)
+
+            formatted_message = f"Bug report description:\n{description}\n\nSuggested solution:\n{response_text}"
+
+            email_template = f"Hello,\n\nPlease see below the following high priority bug report:\n\nTitle: {title}\n\n{formatted_message}"
             ses_client.send_email(
                 Source=SES_EMAIL,
                 Destination = {'ToAddresses': [RECIPIENT_EMAIL]},
