@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 
 
 app = Flask(__name__)
-
 # Load environment variables
 sqs_client = boto3.client('sqs', region_name=os.getenv('AWS_REGION'))
 ses_client = boto3.client('ses', region_name=os.getenv('AWS_REGION'))
@@ -29,7 +28,8 @@ def process_sqs_p3_message():
             response = sqs_client.receive_message(
                 QueueUrl=QUEUE_URL,
                 MaxNumberOfMessages=1,
-                WaitTimeSeconds=10
+                WaitTimeSeconds=10,
+                VisibilityTimeout=30 
             )
 
             messages = response.get('Messages', [])
